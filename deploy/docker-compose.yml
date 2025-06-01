@@ -1,0 +1,10 @@
+services:
+  project:
+    image: project
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    environment:
+      CONN_STRING: "mysql"
+    ports:
+      - 8080:8080

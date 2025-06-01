@@ -7,5 +7,5 @@ import (
 )
 
 func main() {
-	log.Fatal(app.GetRouter())
+	log.Fatal(app.RunRouter())
 }

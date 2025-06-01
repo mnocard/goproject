@@ -1,17 +1,15 @@
 package app
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	handlers "github.com/mnocard/go-project/internal/handlers"
+	uService "github.com/mnocard/go-project/internal/services/user"
+	uStorage "github.com/mnocard/go-project/internal/storage"
 )
 
-var users = map[string]string{
-	"admin": "admin",
-}
-
-func GetRouter() error {
+func RunRouter() error {
 	r := gin.Default()
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
@@ -23,27 +21,14 @@ func GetRouter() error {
 		"admin": "admin",
 	}))
 
-	// r.POST("/admin", func(c *gin.Context) {
-	authorized.POST("admin", func(c *gin.Context) {
-		user := c.MustGet(gin.AuthUserKey).(string)
-		log.Println("admin start")
-		// user := "admin"
-		log.Println("request:", c.Request)
-		log.Println("user", user)
+	uStorage, err := uStorage.NewStorage()
+	if err != nil {
+		panic(err)
+	}
 
-		var json struct {
-			Value string `json:"value" binding:"required"`
-		}
-
-		if c.Bind(&json) == nil {
-			log.Println("c.Bind(&json) == nil")
-			log.Println("json.Value", json.Value)
-
-			users[user] = json.Value
-			c.JSON(http.StatusOK, gin.H{"status": "ok"})
-		}
-		log.Println("admin end")
-	})
+	uService := uService.New(uStorage)
+	h := handlers.New(uService)
+	authorized.POST("admin", h.ChangeAdminPassword)
 
 	return r.Run()
 }
