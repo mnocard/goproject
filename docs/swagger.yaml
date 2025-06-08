@@ -1,0 +1,33 @@
+basePath: /
+definitions:
+  handlers.Password:
+    properties:
+      new_password:
+        type: string
+    required:
+    - new_password
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  license:
+    name: Apache 2.0
+  title: Project Swagger
+  version: "0.1"
+paths:
+  /admin/changeAdminPassword:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: new password
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.Password'
+      produces:
+      - application/json
+      responses: {}
+      summary: ChangeAdminPassword
+swagger: "2.0"

@@ -3,7 +3,8 @@ async function send() {
   const pingResponse = await fetch(url + "ping", {
     "headers": {
       "content-type": "text/plain",
-      "Access-Control-Allow-Origin": "*"
+      "Access-Control-Allow-Origin": "*",
+      "authorization": 'Basic ' + btoa("admin" + ":" + "admin"),
     },
     "duplex": "half",
     "method": "GET",
@@ -14,10 +15,10 @@ async function send() {
   console.log("Response status:", pingResponse.status);
 
   const body = {
-    value: "manu"
+    password:  "manu"
   }
 
-  const adminResponse = await fetch(url + "admin", {
+  const adminResponse = await fetch(url + "changeAdminPassword", {
     "headers": {
       "content-type": "application/json",
       "authorization": 'Basic ' + btoa("admin" + ":" + "admin"),

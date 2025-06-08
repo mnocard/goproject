@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"log"
 	"net/http"
 
@@ -25,31 +26,40 @@ type Handler struct {
 }
 
 type userService interface {
-	Create(uName, password string) (int, error)
-	Get(id int) (*uService.User, error)
-	FindByName(uName string) (*uService.User, error)
-	Update(uName, password string) (int, error)
-	Delete(uName string) (bool, error)
+	Create(context.Context, string, string, bool) (int, error)
+	Get(context.Context, int) (*uService.User, error)
+	FindByName(context.Context, string) (*uService.User, error)
+	Update(context.Context, string, string) (int, error)
+	Delete(context.Context, string) (bool, error)
 }
 
 func New(uService userService) *Handler {
 	return &Handler{uService: uService}
 }
 
+// @Summary	ChangeAdminPassword
+// @Schemes	http
+// @Accept		json
+// @Produce	json
+// @Param		input	body	handlers.Password	true	"new password"
+// @Router		/admin/changeAdminPassword [post]
 func (h *Handler) ChangeAdminPassword(c *gin.Context) {
 	log.Println("ChangeAdminPassword start. Request", c.Request)
 	user := c.MustGet(gin.AuthUserKey).(string)
 
 	var json struct {
-		Value string `json:"value" binding:"required"`
+		NewPassword string `json:"password" binding:"required"`
 	}
 
-	if c.Bind(&json) == nil {
-		log.Println("ChangeAdminPassword json.Value", json.Value)
-
-		h.uService.Update(user, json.Value)
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	err := c.Bind(&json)
+	if err != nil {
+		log.Println("ChangeAdminPassword err", err)
+		return
 	}
+
+	log.Println("ChangeAdminPassword json", json)
+	h.uService.Update(c.Request.Context(), user, json.NewPassword)
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	log.Println("ChangeAdminPassword end")
 }
 
@@ -59,12 +69,13 @@ func (h *Handler) CreateUser(c *gin.Context) {
 	var json struct {
 		UserName string `json:"username" binding:"required"`
 		Password string `json:"password" binding:"required"`
+		IsAdmin  bool   `json:"is_admin" `
 	}
 
 	if c.Bind(&json) == nil {
 		log.Println("CreateUser json", json)
 
-		h.uService.Create(json.UserName, json.Password)
+		h.uService.Create(c.Request.Context(), json.UserName, json.Password, json.IsAdmin)
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	}
 	log.Println("CreateUser end")
