@@ -12,6 +12,11 @@ import (
 
 //	@host		localhost:8080
 //	@BasePath	/
+
+// @securityDefinitions.basic	BasicAuth
+//
+// @in							header
+// @name						Authorization
 func main() {
 	log.Fatal(app.RunRouter())
 }

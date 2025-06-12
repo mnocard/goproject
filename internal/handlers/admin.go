@@ -37,28 +37,37 @@ func New(uService userService) *Handler {
 	return &Handler{uService: uService}
 }
 
+type NewPassword struct {
+	Value string `json:"value" binding:"required"`
+}
+
 // @Summary	ChangeAdminPassword
-// @Schemes	http
+// @Security	BasicAuth
 // @Accept		json
 // @Produce	json
-// @Param		input	body	handlers.Password	true	"new password"
+// @Param		input	body	handlers.NewPassword	true	"new password"
 // @Router		/admin/changeAdminPassword [post]
 func (h *Handler) ChangeAdminPassword(c *gin.Context) {
 	log.Println("ChangeAdminPassword start. Request", c.Request)
 	user := c.MustGet(gin.AuthUserKey).(string)
-
-	var json struct {
-		NewPassword string `json:"password" binding:"required"`
+	isAdmin := c.MustGet("isAdmin").(bool)
+	if !isAdmin {
+		log.Println("ChangeAdminPassword not admin")
+		c.JSON(http.StatusMethodNotAllowed, gin.H{"status": "not admin"})
+		return
 	}
+
+	var json NewPassword
 
 	err := c.Bind(&json)
 	if err != nil {
 		log.Println("ChangeAdminPassword err", err)
+		c.JSON(http.StatusBadRequest, gin.H{"status": "bad request"})
 		return
 	}
 
 	log.Println("ChangeAdminPassword json", json)
-	h.uService.Update(c.Request.Context(), user, json.NewPassword)
+	h.uService.Update(c.Request.Context(), user, json.Value)
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	log.Println("ChangeAdminPassword end")
 }

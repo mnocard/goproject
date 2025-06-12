@@ -35,3 +35,4 @@ send();
 
 //docker build --tag 'project' -f 'deploy/Dockerfile' .
 //docker compose -f 'deploy/docker-compose.yml' up
+//swag init -g cmd\project\main.go

@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"log"
 
 	pg "github.com/mnocard/go-project/internal/storage"
 )
@@ -22,10 +23,12 @@ func New(s UserStorage) *authService {
 func (uService *authService) Auth(ctx context.Context, uName, password string) (bool, error) {
 	user, err := uService.uStorage.FindByName(ctx, uName)
 	if err != nil {
+		log.Println("authService) Auth err 1", err)
 		return false, err
 	}
 
 	if user == nil || user.Password != password {
+		log.Println("authService) Auth err 2", user, password)
 		return false, errors.New("user not found or wrong password")
 	}
 

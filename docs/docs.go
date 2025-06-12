@@ -20,6 +20,11 @@ const docTemplate = `{
     "paths": {
         "/admin/changeAdminPassword": {
             "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -34,7 +39,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.Password"
+                            "$ref": "#/definitions/handlers.NewPassword"
                         }
                     }
                 ],
@@ -43,16 +48,21 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "handlers.Password": {
+        "handlers.NewPassword": {
             "type": "object",
             "required": [
-                "new_password"
+                "value"
             ],
             "properties": {
-                "new_password": {
+                "value": {
                     "type": "string"
                 }
             }
+        }
+    },
+    "securityDefinitions": {
+        "BasicAuth": {
+            "type": "basic"
         }
     }
 }`

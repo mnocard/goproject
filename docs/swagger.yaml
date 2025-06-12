@@ -1,11 +1,11 @@
 basePath: /
 definitions:
-  handlers.Password:
+  handlers.NewPassword:
     properties:
-      new_password:
+      value:
         type: string
     required:
-    - new_password
+    - value
     type: object
 host: localhost:8080
 info:
@@ -25,9 +25,14 @@ paths:
         name: input
         required: true
         schema:
-          $ref: '#/definitions/handlers.Password'
+          $ref: '#/definitions/handlers.NewPassword'
       produces:
       - application/json
       responses: {}
+      security:
+      - BasicAuth: []
       summary: ChangeAdminPassword
+securityDefinitions:
+  BasicAuth:
+    type: basic
 swagger: "2.0"

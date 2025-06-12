@@ -25,9 +25,11 @@ func RunRouter() error {
 	defer uStorage.Close()
 
 	aService := aService.New(uStorage)
-	r.Use(auth.AuthUser(aService))
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
+	r.Use(auth.AuthUser(aService))
+
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"message": "pong",
@@ -36,7 +38,11 @@ func RunRouter() error {
 
 	uService := uService.New(uStorage)
 	h := handlers.New(uService)
-	r.POST("changeAdminPassword", h.ChangeAdminPassword)
 
+	authorized := r.Group("/admin")
+	authorized.Use(auth.AdminRequired())
+	{
+		authorized.POST("/changeAdminPassword", h.ChangeAdminPassword)
+	}
 	return r.Run()
 }
