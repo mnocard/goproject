@@ -3,6 +3,8 @@ package storage
 import (
 	"context"
 	"log"
+
+	"github.com/jackc/pgx/v5"
 )
 
 type Task struct {
@@ -14,7 +16,7 @@ type Task struct {
 }
 
 func (s *storage) CreateTask(ctx context.Context, t *Task) (int, error) {
-	task, err := s.FindTaskByUserId(ctx, t.UserId)
+	task, err := s.FindTaskById(ctx, t.UserId)
 	if err == nil {
 		return task.Id, nil
 	}
@@ -32,7 +34,7 @@ func (s *storage) CreateTask(ctx context.Context, t *Task) (int, error) {
 		return 0, err
 	}
 
-	return task.Id, nil
+	return id, nil
 }
 
 func (s *storage) FindTaskByUserId(ctx context.Context, tUserId int) (*Task, error) {
@@ -45,6 +47,9 @@ func (s *storage) FindTaskByUserId(ctx context.Context, tUserId int) (*Task, err
 
 	err := s.pool.QueryRow(ctx, sql, tUserId).Scan(&task.Id, &task.UserId, &task.Points, &task.ParentTaskId, &task.IsCompleted)
 	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, nil
+		}
 		s.logError(err, "storage) FindTaskByUserId")
 		return nil, err
 	}
@@ -63,6 +68,9 @@ func (s *storage) FindTaskById(ctx context.Context, id int) (*Task, error) {
 
 	err := s.pool.QueryRow(ctx, sql, id).Scan(&task.Id, &task.UserId, &task.Points, &task.ParentTaskId, &task.IsCompleted)
 	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, nil
+		}
 		s.logError(err, "storage) FindTaskById")
 		return nil, err
 	}

@@ -31,6 +31,9 @@ const docTemplate = `{
                 "produces": [
                     "application/json"
                 ],
+                "tags": [
+                    "Admin"
+                ],
                 "summary": "ChangeAdminPassword",
                 "parameters": [
                     {
@@ -40,6 +43,68 @@ const docTemplate = `{
                         "required": true,
                         "schema": {
                             "$ref": "#/definitions/handlers.NewPassword"
+                        }
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/admin/createTask": {
+            "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "CreateTask",
+                "parameters": [
+                    {
+                        "description": "task data",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/task.Task"
+                        }
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/admin/createUser": {
+            "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "CreateUser",
+                "parameters": [
+                    {
+                        "description": "user data",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/user.User"
                         }
                     }
                 ],
@@ -55,6 +120,48 @@ const docTemplate = `{
             ],
             "properties": {
                 "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "task.Task": {
+            "type": "object",
+            "required": [
+                "user_id"
+            ],
+            "properties": {
+                "is_completed": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "parent_task_id": {
+                    "type": "integer"
+                },
+                "points": {
+                    "type": "integer"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "user.User": {
+            "type": "object",
+            "required": [
+                "password",
+                "username"
+            ],
+            "properties": {
+                "is_admin": {
+                    "type": "boolean"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "rating": {
+                    "type": "integer"
+                },
+                "username": {
                     "type": "string"
                 }
             }

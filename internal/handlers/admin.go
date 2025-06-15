@@ -6,33 +6,36 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	tService "github.com/mnocard/go-project/internal/services/task"
 	uService "github.com/mnocard/go-project/internal/services/user"
 )
 
-var tasks []task
-
-type task struct {
-	Id         int    `json:"username" binding:"required"`
-	MainTaskId int    `json:"main_task_id" binding:"required"`
-	Points     int    `json:"points"`
-	User       string `json:"user" binding:"required"`
-	IsComplete bool   `json:"iscomplete"`
-}
-
 type Handler struct {
 	uService userService
+	tService taskService
 }
 
 type userService interface {
-	Create(context.Context, string, string, bool) (int, error)
+	Create(context.Context, *uService.User) (int, error)
 	Get(context.Context, int) (*uService.User, error)
 	FindByName(context.Context, string) (*uService.User, error)
 	Update(context.Context, string, string) (int, error)
 	Delete(context.Context, string) (bool, error)
 }
 
-func New(uService userService) *Handler {
-	return &Handler{uService: uService}
+type taskService interface {
+	Create(context.Context, *tService.Task) (int, error)
+	Get(context.Context, int) (*tService.Task, error)
+	FindTaskByUserId(context.Context, int) (*tService.Task, error)
+	Update(context.Context, *tService.Task) (int, error)
+	Delete(context.Context, int) (bool, error)
+}
+
+func New(uService userService, tService taskService) *Handler {
+	return &Handler{
+		uService: uService,
+		tService: tService,
+	}
 }
 
 type NewPassword struct {
@@ -40,6 +43,7 @@ type NewPassword struct {
 }
 
 // @Summary	ChangeAdminPassword
+// @Tags		Admin
 // @Security	BasicAuth
 // @Accept		json
 // @Produce	json
@@ -70,49 +74,44 @@ func (h *Handler) ChangeAdminPassword(c *gin.Context) {
 	log.Println("ChangeAdminPassword end")
 }
 
+// @Summary		CreateUser
+// @Tags		Admin
+// @Security	BasicAuth
+// @Accept		json
+// @Produce		json
+// @Param		input	body	user.User	true	"user data"
+// @Router		/admin/createUser [post]
 func (h *Handler) CreateUser(c *gin.Context) {
 	log.Println("CreateUser start. Request", c.Request)
 
-	var json struct {
-		UserName string `json:"username" binding:"required"`
-		Password string `json:"password" binding:"required"`
-		Rating   int    `json:"rating"`
-		IsAdmin  bool   `json:"is_admin" `
-	}
+	var user uService.User
 
-	if c.Bind(&json) == nil {
-		log.Println("CreateUser json", json)
+	if c.Bind(&user) == nil {
+		log.Println("CreateUser user", user)
 
-		h.uService.Create(c.Request.Context(), json.UserName, json.Password, json.IsAdmin)
+		h.uService.Create(c.Request.Context(), &user)
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	}
 	log.Println("CreateUser end")
 }
 
-func CreateTask(c *gin.Context) {
+// @Summary		CreateTask
+// @Tags		Admin
+// @Security	BasicAuth
+// @Accept		json
+// @Produce		json
+// @Param		input	body	task.Task	true	"task data"
+// @Router		/admin/createTask [post]
+func (h *Handler) CreateTask(c *gin.Context) {
 	log.Println("CreateTask start. Request", c.Request)
 
-	var task task
+	var task tService.Task
 
 	if c.Bind(&task) == nil {
 		log.Println("CreateTask task", task)
 
-		tasks = append(tasks, task)
+		h.tService.Create(c.Request.Context(), &task)
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	}
 	log.Println("CreateTask end")
-}
-
-func CreateSubTask(c *gin.Context) {
-	log.Println("CreateSubTask start. Request", c.Request)
-
-	var task task
-
-	if c.Bind(&task) == nil {
-		log.Println("CreateSubTask task", task)
-
-		tasks = append(tasks, task)
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
-	}
-	log.Println("CreateSubTask end")
 }

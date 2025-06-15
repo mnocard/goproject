@@ -3,6 +3,8 @@ package storage
 import (
 	"context"
 	"log"
+
+	"github.com/jackc/pgx/v5"
 )
 
 type User struct {
@@ -32,7 +34,7 @@ func (s *storage) CreateUser(ctx context.Context, u *User) (int, error) {
 		return 0, err
 	}
 
-	return user.Id, nil
+	return id, nil
 }
 
 func (s *storage) FindUserByName(ctx context.Context, uName string) (*User, error) {
@@ -45,7 +47,10 @@ func (s *storage) FindUserByName(ctx context.Context, uName string) (*User, erro
 
 	err := s.pool.QueryRow(ctx, sql, uName).Scan(&user.Id, &user.UserName, &user.Password, &user.Rating, &user.IsAdmin)
 	if err != nil {
-		s.logError(err, "storage) FindUserByName")
+		if err == pgx.ErrNoRows {
+			return nil, nil
+		}
+		s.logError(err, "storage) FindUserByName error")
 		return nil, err
 	}
 
@@ -63,6 +68,9 @@ func (s *storage) FindUserById(ctx context.Context, id int) (*User, error) {
 
 	err := s.pool.QueryRow(ctx, sql, id).Scan(&user.Id, &user.UserName, &user.Password, &user.Rating, &user.IsAdmin)
 	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, nil
+		}
 		s.logError(err, "storage) FindUserById")
 		return nil, err
 	}

@@ -74,8 +74,8 @@ func (s *storage) checkTable(ctx context.Context) {
 	}
 
 	sql := `
-        INSERT INTO users (username, password, is_admin)
-        VALUES ($1, $2, true)
+        INSERT INTO users (username, password, rating, is_admin)
+        VALUES ($1, $2, 0, true)
         RETURNING id;
 	`
 
@@ -93,10 +93,11 @@ func (s *storage) createUserTable(ctx context.Context) error {
 	sql := `
 	    CREATE TABLE IF NOT EXISTS users
         (
-            id          serial    NOT NULL PRIMARY KEY,
-            username    text      NOT NULL,
-            password    text      NOT NULL,
-			is_admin    bool      NOT NULL,
+            id          serial     NOT NULL PRIMARY KEY,
+            username    text       NOT NULL,
+            password    text       NOT NULL,
+			rating      integer    NOT NULL,
+			is_admin    bool       NOT NULL,
 			UNIQUE(username)
         );`
 	_, err := s.pool.Exec(ctx, sql)
@@ -111,6 +112,7 @@ func (s *storage) createTaskTable(ctx context.Context) error {
             user_id           integer    NOT NULL,
             points            integer    NOT NULL,
 			parent_task_id    integer    NOT NULL,
+			is_completed      bool       NOT NULL
         );`
 	_, err := s.pool.Exec(ctx, sql)
 	return err

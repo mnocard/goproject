@@ -7,6 +7,34 @@ definitions:
     required:
     - value
     type: object
+  task.Task:
+    properties:
+      is_completed:
+        default: false
+        type: boolean
+      parent_task_id:
+        type: integer
+      points:
+        type: integer
+      user_id:
+        type: integer
+    required:
+    - user_id
+    type: object
+  user.User:
+    properties:
+      is_admin:
+        type: boolean
+      password:
+        type: string
+      rating:
+        type: integer
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
 host: localhost:8080
 info:
   contact: {}
@@ -32,6 +60,46 @@ paths:
       security:
       - BasicAuth: []
       summary: ChangeAdminPassword
+      tags:
+      - Admin
+  /admin/createTask:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: task data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/task.Task'
+      produces:
+      - application/json
+      responses: {}
+      security:
+      - BasicAuth: []
+      summary: CreateTask
+      tags:
+      - Admin
+  /admin/createUser:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: user data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/user.User'
+      produces:
+      - application/json
+      responses: {}
+      security:
+      - BasicAuth: []
+      summary: CreateUser
+      tags:
+      - Admin
 securityDefinitions:
   BasicAuth:
     type: basic

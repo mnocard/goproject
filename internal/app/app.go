@@ -11,6 +11,7 @@ import (
 	handlers "github.com/mnocard/go-project/internal/handlers"
 	auth "github.com/mnocard/go-project/internal/middleware/auth"
 	aService "github.com/mnocard/go-project/internal/services/auth"
+	tService "github.com/mnocard/go-project/internal/services/task"
 	uService "github.com/mnocard/go-project/internal/services/user"
 	uStorage "github.com/mnocard/go-project/internal/storage"
 )
@@ -37,12 +38,15 @@ func RunRouter() error {
 	})
 
 	uService := uService.New(uStorage)
-	h := handlers.New(uService)
+	tService := tService.New(uStorage)
+	h := handlers.New(uService, tService)
 
 	authorized := r.Group("/admin")
 	authorized.Use(auth.AdminRequired())
 	{
 		authorized.POST("/changeAdminPassword", h.ChangeAdminPassword)
+		authorized.POST("/createUser", h.CreateUser)
+		authorized.POST("/createTask", h.CreateTask)
 	}
 	return r.Run()
 }

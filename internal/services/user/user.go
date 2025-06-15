@@ -15,9 +15,10 @@ type UserStorage interface {
 }
 
 type User struct {
-	UserName string
-	Password string
-	IsAdmin  bool
+	UserName string `json:"username" binding:"required"`
+	Password string `json:"password" binding:"required"`
+	Rating   int    `json:"rating"`
+	IsAdmin  bool   `json:"is_admin" `
 }
 
 type userService struct {
@@ -28,11 +29,12 @@ func New(s UserStorage) *userService {
 	return &userService{uStorage: s}
 }
 
-func (uService *userService) Create(ctx context.Context, uName, password string, isAdmin bool) (int, error) {
+func (uService *userService) Create(ctx context.Context, u *User) (int, error) {
 	return uService.uStorage.CreateUser(ctx, &pg.User{
-		UserName: uName,
-		Password: password,
-		IsAdmin:  isAdmin,
+		UserName: u.UserName,
+		Password: u.Password,
+		Rating:   u.Rating,
+		IsAdmin:  u.IsAdmin,
 	})
 }
 

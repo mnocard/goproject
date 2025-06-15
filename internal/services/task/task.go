@@ -15,11 +15,11 @@ type TaskStorage interface {
 }
 
 type Task struct {
-	Id           int
-	UserId       int
-	Points       int
-	ParentTaskId int
-	IsCompleted  bool
+	Id           int  `json:"-"`
+	UserId       int  `json:"user_id" binding:"required"`
+	Points       int  `json:"points"`
+	ParentTaskId int  `json:"parent_task_id"`
+	IsCompleted  bool `json:"is_completed" default:"false"`
 }
 
 type taskService struct {
@@ -30,12 +30,12 @@ func New(s TaskStorage) *taskService {
 	return &taskService{tStorage: s}
 }
 
-func (tService *taskService) Create(ctx context.Context, userId, points, parentTaskId int, isCompleted bool) (int, error) {
+func (tService *taskService) Create(ctx context.Context, t *Task) (int, error) {
 	return tService.tStorage.CreateTask(ctx, &pg.Task{
-		UserId:       userId,
-		Points:       points,
-		ParentTaskId: parentTaskId,
-		IsCompleted:  isCompleted,
+		UserId:       t.UserId,
+		Points:       t.Points,
+		ParentTaskId: t.ParentTaskId,
+		IsCompleted:  t.IsCompleted,
 	})
 }
 
