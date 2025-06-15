@@ -9,13 +9,11 @@ import (
 	uService "github.com/mnocard/go-project/internal/services/user"
 )
 
-var Rating = map[string]int{}
-
 var tasks []task
 
 type task struct {
 	Id         int    `json:"username" binding:"required"`
-	MainTaskId int    `json:"maintaskid" binding:"required"`
+	MainTaskId int    `json:"main_task_id" binding:"required"`
 	Points     int    `json:"points"`
 	User       string `json:"user" binding:"required"`
 	IsComplete bool   `json:"iscomplete"`
@@ -78,6 +76,7 @@ func (h *Handler) CreateUser(c *gin.Context) {
 	var json struct {
 		UserName string `json:"username" binding:"required"`
 		Password string `json:"password" binding:"required"`
+		Rating   int    `json:"rating"`
 		IsAdmin  bool   `json:"is_admin" `
 	}
 

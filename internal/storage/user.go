@@ -1,225 +1,124 @@
-package user
+package storage
 
 import (
 	"context"
-	"errors"
 	"log"
-	"os"
-
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/mnocard/go-project/internal/services/config"
 )
-
-type notFoundError struct {
-}
-
-func (e *notFoundError) Error() string {
-	return "not found"
-}
 
 type User struct {
 	Id       int    `json:"id"`
 	UserName string `json:"username"`
 	Password string `json:"password"`
+	Rating   int    `json:"rating"`
 	IsAdmin  bool   `json:"is_admin"`
 }
 
-type storage struct {
-	pool *pgxpool.Pool
-}
-
-func NewStorage() (*storage, error) {
-	ctx := context.Background()
-
-	connString, err := config.GetConnectionString()
-	if err != nil {
-		log.Println("connString error", err)
-		return nil, err
-	}
-
-	log.Println("connString ", connString)
-
-	dbpool, err := pgxpool.New(ctx, connString)
-	if err != nil {
-		log.Printf("Unable to create connection pool: %v\n", err)
-		os.Exit(1)
-	}
-
-	if err := dbpool.Ping(ctx); err != nil {
-		log.Fatal("Unable to ping database:", err)
-	}
-	log.Println("db connected successfully")
-	storage := storage{pool: dbpool}
-	storage.checkTable(ctx)
-	log.Println("db users exists")
-
-	return &storage, nil
-}
-
-func (s *storage) checkTable(ctx context.Context) {
-	sql := `
-	    CREATE TABLE IF NOT EXISTS users
-        (
-            id          bigserial    NOT NULL PRIMARY KEY,
-            username    text         NOT NULL,
-            password    text         NOT NULL,
-			is_admin    bool         NOT NULL,
-			UNIQUE(username)
-        );`
-	_, err := s.pool.Exec(ctx, sql)
-	if err != nil {
-		s.logError(err, "storage) checkTable - create table")
-	}
-
-	user, err := s.FindByName(ctx, "admin")
-	if err != nil && err != pgx.ErrNoRows {
-		s.logError(err, "storage) checkTable - find admin")
-		panic(err)
-	}
-
-	if user != nil {
-		log.Println("storage) checkTable - admin is already exist")
-		return
-	}
-
-	sql = `
-        INSERT INTO users (username, password, is_admin)
-        VALUES ($1, $2, true)
-        RETURNING id;
-	`
-
-	commandTag, err := s.pool.Exec(ctx, sql, "admin", "admin")
-	if err != nil {
-		s.logError(err, "storage) checkTable - create admin")
-	}
-
-	if commandTag.RowsAffected() == 0 {
-		log.Println("storage) checkTable - create admin ")
-	}
-}
-
-func (s *storage) Close() {
-	s.pool.Close()
-}
-
-func (s *storage) logError(err error, caller string) {
-	var pgErr *pgconn.PgError
-	if errors.As(err, &pgErr) {
-		log.Println(caller, pgErr.Message)
-		log.Println(caller, pgErr.Code)
-		return
-	}
-	log.Println(caller, err)
-}
-
-func (s *storage) Create(ctx context.Context, u *User) (int, error) {
-	user, err := s.FindByName(ctx, u.UserName)
+func (s *storage) CreateUser(ctx context.Context, u *User) (int, error) {
+	user, err := s.FindUserByName(ctx, u.UserName)
 	if err == nil {
 		return user.Id, nil
 	}
 
 	sql := `
-        INSERT INTO users (username, password, is_admin)
-        VALUES ($1, $2, $3)
+        INSERT INTO users (username, password, rating, is_admin)
+        VALUES ($1, $2, $3, $4)
         RETURNING id;
 	`
 
 	var id int
-	err = s.pool.QueryRow(ctx, sql, u.UserName, u.Password, u.IsAdmin).Scan(&id)
+	err = s.pool.QueryRow(ctx, sql, u.UserName, u.Password, u.Rating, u.IsAdmin).Scan(&id)
 	if err != nil {
-		s.logError(err, "storage) Create")
+		s.logError(err, "storage) CreateUser")
 		return 0, err
 	}
 
 	return user.Id, nil
 }
 
-func (s *storage) FindByName(ctx context.Context, uName string) (*User, error) {
+func (s *storage) FindUserByName(ctx context.Context, uName string) (*User, error) {
 	var user User
 
 	sql := `
-    	SELECT id, username, password, is_admin FROM users
+    	SELECT id, username, password, rating, is_admin FROM users
     	WHERE username = $1;
 	`
 
-	err := s.pool.QueryRow(ctx, sql, uName).Scan(&user.Id, &user.UserName, &user.Password, &user.IsAdmin)
+	err := s.pool.QueryRow(ctx, sql, uName).Scan(&user.Id, &user.UserName, &user.Password, &user.Rating, &user.IsAdmin)
 	if err != nil {
-		s.logError(err, "storage) FindByName")
+		s.logError(err, "storage) FindUserByName")
 		return nil, err
 	}
 
-	log.Println("storage) FindByName user:", user)
+	log.Println("storage) FindUserByName user:", user)
 	return &user, nil
 }
 
-func (s *storage) FindById(ctx context.Context, id int) (*User, error) {
+func (s *storage) FindUserById(ctx context.Context, id int) (*User, error) {
 	var user User
 
 	sql := `
-    	SELECT id, username, password, is_admin FROM user-db
+    	SELECT id, username, password, rating, is_admin FROM users
     	WHERE id = $1;
 	`
 
-	err := s.pool.QueryRow(ctx, sql, id).Scan(&user.Id, &user.UserName, &user.Password, &user.IsAdmin)
+	err := s.pool.QueryRow(ctx, sql, id).Scan(&user.Id, &user.UserName, &user.Password, &user.Rating, &user.IsAdmin)
 	if err != nil {
-		s.logError(err, "storage) FindById")
+		s.logError(err, "storage) FindUserById")
 		return nil, err
 	}
 
-	log.Println("storage) FindById user:", user)
+	log.Println("storage) FindUserById user:", user)
 	return &user, nil
 }
 
-func (s *storage) Update(ctx context.Context, u User) (*User, error) {
+func (s *storage) UpdateUser(ctx context.Context, u User) (*User, error) {
 	var user *User
 
 	if u.Id != 0 {
-		user, _ = s.FindById(ctx, u.Id)
+		user, _ = s.FindUserById(ctx, u.Id)
 	} else {
-		user, _ = s.FindByName(ctx, u.UserName)
+		user, _ = s.FindUserByName(ctx, u.UserName)
 	}
 
 	if user.Id == 0 {
-		return nil, &notFoundError{}
+		return nil, &NotFoundError{}
 	}
 
 	sql := `
     	UPDATE users
-		SET username = $2, password = $3, is_admin = $4
+		SET username = $2, password = $3, rating = $4, is_admin = $5
     	WHERE id = $1
 		RETURNING id;
 	`
 
-	commandTag, err := s.pool.Exec(ctx, sql, user.Id, u.UserName, u.Password, u.IsAdmin)
+	commandTag, err := s.pool.Exec(ctx, sql, user.Id, u.UserName, u.Password, u.Rating, u.IsAdmin)
 	if err != nil {
-		s.logError(err, "storage) Update error")
+		s.logError(err, "storage) UpdateUser error")
 		return nil, err
 	}
 
 	if commandTag.RowsAffected() == 0 {
-		err = &notFoundError{}
-		s.logError(err, "storage) Update not found")
+		err = &NotFoundError{}
+		s.logError(err, "storage) UpdateUser not found")
 		return nil, err
 	}
 
-	log.Println("storage) Update user:", user)
+	log.Println("storage) UpdateUser user:", user)
 	return user, nil
 }
 
-func (s *storage) Delete(ctx context.Context, id int) (bool, error) {
+func (s *storage) DeleteUser(ctx context.Context, id int) (bool, error) {
 	sql := `DELETE FROM users WHERE id = $1`
 
 	commandTag, err := s.pool.Exec(ctx, sql, id)
 	if err != nil {
-		s.logError(err, "storage) Delete error")
+		s.logError(err, "storage) DeleteUser error")
 		return false, err
 	}
 
 	if commandTag.RowsAffected() == 0 {
-		err = &notFoundError{}
-		s.logError(err, "storage) Delete not found")
+		err = &NotFoundError{}
+		s.logError(err, "storage) DeleteUser not found")
 		return false, err
 	}
 

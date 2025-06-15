@@ -6,7 +6,7 @@ services:
       context: ../
       dockerfile: deploy/Dockerfile
     environment:
-      CONN_STRING: 'postgres://user:user@db:5432/user-db'
+      CONN_STRING: 'postgres://user:user@db:5432/users'
     ports:
       - 8080:8080
     depends_on:
@@ -22,7 +22,7 @@ services:
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: user
-      POSTGRES_DB: user-db
+      POSTGRES_DB: users
     ports:
       - 5432:5432
     healthcheck:

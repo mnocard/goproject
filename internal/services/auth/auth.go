@@ -9,7 +9,7 @@ import (
 )
 
 type UserStorage interface {
-	FindByName(context.Context, string) (*pg.User, error)
+	FindUserByName(context.Context, string) (*pg.User, error)
 }
 
 type authService struct {
@@ -21,7 +21,7 @@ func New(s UserStorage) *authService {
 }
 
 func (uService *authService) Auth(ctx context.Context, uName, password string) (bool, error) {
-	user, err := uService.uStorage.FindByName(ctx, uName)
+	user, err := uService.uStorage.FindUserByName(ctx, uName)
 	if err != nil {
 		log.Println("authService) Auth err 1", err)
 		return false, err
