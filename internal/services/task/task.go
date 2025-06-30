@@ -2,6 +2,7 @@ package task
 
 import (
 	"context"
+	"errors"
 
 	pg "github.com/mnocard/go-project/internal/storage"
 )
@@ -54,8 +55,8 @@ func (tService *taskService) Get(ctx context.Context, id int) (*Task, error) {
 	}, err
 }
 
-func (uService *taskService) FindTaskByUserId(ctx context.Context, userId int) (*Task, error) {
-	task, err := uService.tStorage.FindTaskByUserId(ctx, userId)
+func (tService *taskService) FindTaskByUserId(ctx context.Context, userId int) (*Task, error) {
+	task, err := tService.tStorage.FindTaskByUserId(ctx, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -69,8 +70,8 @@ func (uService *taskService) FindTaskByUserId(ctx context.Context, userId int) (
 	}, err
 }
 
-func (uService *taskService) Update(ctx context.Context, t *Task) (int, error) {
-	task, err := uService.tStorage.UpdateTask(ctx, pg.Task{
+func (tService *taskService) Update(ctx context.Context, t *Task) (int, error) {
+	task, err := tService.tStorage.UpdateTask(ctx, pg.Task{
 		UserId:       t.UserId,
 		Points:       t.Points,
 		ParentTaskId: t.ParentTaskId,
@@ -84,11 +85,31 @@ func (uService *taskService) Update(ctx context.Context, t *Task) (int, error) {
 	return task.Id, err
 }
 
-func (uService *taskService) Delete(ctx context.Context, id int) (bool, error) {
-	task, err := uService.Get(ctx, id)
+func (tService *taskService) Delete(ctx context.Context, id int) (bool, error) {
+	task, err := tService.Get(ctx, id)
 	if err != nil {
-		return false, nil
+		return false, err
 	}
 
-	return uService.tStorage.DeleteTask(ctx, task.Id)
+	return tService.tStorage.DeleteTask(ctx, task.Id)
+}
+
+func (tService *taskService) CompleteTask(ctx context.Context, userId int, taskId int) (int, error) {
+	task, err := tService.tStorage.FindTaskById(ctx, taskId)
+	if err != nil {
+		return 0, err
+	}
+
+	if task.UserId != userId {
+		return 0, errors.New("it is not your task!")
+	}
+
+	if task.IsCompleted {
+		return 0, errors.New("task is already completed!")
+	}
+
+	task.IsCompleted = true
+	tService.tStorage.UpdateTask(ctx, *task)
+
+	return task.Points, nil
 }

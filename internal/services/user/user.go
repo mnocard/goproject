@@ -15,10 +15,11 @@ type UserStorage interface {
 }
 
 type User struct {
+	Id       int    `json:"-"`
 	UserName string `json:"username" binding:"required"`
 	Password string `json:"password" binding:"required"`
 	Rating   int    `json:"rating"`
-	IsAdmin  bool   `json:"is_admin" `
+	IsAdmin  bool   `json:"is_admin" default:"false"`
 }
 
 type userService struct {
@@ -41,19 +42,39 @@ func (uService *userService) Create(ctx context.Context, u *User) (int, error) {
 func (uService *userService) Get(ctx context.Context, id int) (*User, error) {
 	user, err := uService.uStorage.FindUserById(ctx, id)
 	return &User{
+		Id:       user.Id,
 		UserName: user.UserName,
 		Password: user.Password,
 		IsAdmin:  user.IsAdmin,
+		Rating:   user.Rating,
 	}, err
 }
 
 func (uService *userService) FindByName(ctx context.Context, uName string) (*User, error) {
 	user, err := uService.uStorage.FindUserByName(ctx, uName)
 	return &User{
+		Id:       user.Id,
 		UserName: user.UserName,
 		Password: user.Password,
 		IsAdmin:  user.IsAdmin,
+		Rating:   user.Rating,
 	}, err
+}
+
+func (uService *userService) UpdateRating(ctx context.Context, id, rating int) error {
+	user, err := uService.uStorage.FindUserById(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	_, err = uService.uStorage.UpdateUser(ctx, pg.User{
+		UserName: user.UserName,
+		Password: user.Password,
+		IsAdmin:  user.IsAdmin,
+		Rating:   rating,
+	})
+
+	return err
 }
 
 func (uService *userService) Update(ctx context.Context, uName, password string) (int, error) {
@@ -74,8 +95,17 @@ func (uService *userService) Update(ctx context.Context, uName, password string)
 func (uService *userService) Delete(ctx context.Context, uName string) (bool, error) {
 	user, err := uService.uStorage.FindUserByName(ctx, uName)
 	if err != nil {
-		return false, nil
+		return false, err
 	}
 
 	return uService.uStorage.DeleteUser(ctx, user.Id)
+}
+
+func (uService *userService) GetRating(ctx context.Context, uName string) (int, error) {
+	user, err := uService.uStorage.FindUserByName(ctx, uName)
+	if err != nil {
+		return 0, err
+	}
+
+	return user.Rating, nil
 }

@@ -24,6 +24,7 @@ definitions:
   user.User:
     properties:
       is_admin:
+        default: false
         type: boolean
       password:
         type: string
@@ -100,6 +101,32 @@ paths:
       summary: CreateUser
       tags:
       - Admin
+  /user/completeTask/{taskId}:
+    get:
+      parameters:
+      - description: Task ID
+        in: path
+        name: taskId
+        required: true
+        type: integer
+      responses: {}
+      security:
+      - BasicAuth: []
+      summary: CompleteTask
+      tags:
+      - User
+  /user/getRating:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses: {}
+      security:
+      - BasicAuth: []
+      summary: GetRating
+      tags:
+      - User
 securityDefinitions:
   BasicAuth:
     type: basic

@@ -16,11 +16,6 @@ type Task struct {
 }
 
 func (s *storage) CreateTask(ctx context.Context, t *Task) (int, error) {
-	task, err := s.FindTaskById(ctx, t.UserId)
-	if err == nil {
-		return task.Id, nil
-	}
-
 	sql := `
         INSERT INTO tasks (user_id, points, parent_task_id, is_completed)
         VALUES ($1, $2, $3, $4)
@@ -28,7 +23,7 @@ func (s *storage) CreateTask(ctx context.Context, t *Task) (int, error) {
 	`
 
 	var id int
-	err = s.pool.QueryRow(ctx, sql, t.UserId, t.Points, t.ParentTaskId, t.IsCompleted).Scan(&id)
+	err := s.pool.QueryRow(ctx, sql, t.UserId, t.Points, t.ParentTaskId, t.IsCompleted).Scan(&id)
 	if err != nil {
 		s.logError(err, "storage) CreateTask")
 		return 0, err
@@ -47,9 +42,6 @@ func (s *storage) FindTaskByUserId(ctx context.Context, tUserId int) (*Task, err
 
 	err := s.pool.QueryRow(ctx, sql, tUserId).Scan(&task.Id, &task.UserId, &task.Points, &task.ParentTaskId, &task.IsCompleted)
 	if err != nil {
-		if err == pgx.ErrNoRows {
-			return nil, nil
-		}
 		s.logError(err, "storage) FindTaskByUserId")
 		return nil, err
 	}
@@ -68,9 +60,6 @@ func (s *storage) FindTaskById(ctx context.Context, id int) (*Task, error) {
 
 	err := s.pool.QueryRow(ctx, sql, id).Scan(&task.Id, &task.UserId, &task.Points, &task.ParentTaskId, &task.IsCompleted)
 	if err != nil {
-		if err == pgx.ErrNoRows {
-			return nil, nil
-		}
 		s.logError(err, "storage) FindTaskById")
 		return nil, err
 	}
@@ -81,14 +70,20 @@ func (s *storage) FindTaskById(ctx context.Context, id int) (*Task, error) {
 
 func (s *storage) UpdateTask(ctx context.Context, t Task) (*Task, error) {
 	var task *Task
+	var err error
 
 	if t.Id != 0 {
-		task, _ = s.FindTaskById(ctx, t.Id)
+		task, err = s.FindTaskById(ctx, t.Id)
 	} else {
-		task, _ = s.FindTaskByUserId(ctx, t.UserId)
+		task, err = s.FindTaskByUserId(ctx, t.UserId)
 	}
 
-	if task.Id == 0 {
+	if err != nil && err != pgx.ErrNoRows {
+		s.logError(err, "storage) UpdateTask error")
+		return nil, err
+	}
+
+	if task == nil {
 		return nil, &NotFoundError{}
 	}
 

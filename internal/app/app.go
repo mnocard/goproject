@@ -29,24 +29,31 @@ func RunRouter() error {
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	r.Use(auth.AuthUser(aService))
-
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"message": "pong",
 		})
 	})
 
+	r.Use(auth.AuthUser(aService))
+
 	uService := uService.New(uStorage)
 	tService := tService.New(uStorage)
 	h := handlers.New(uService, tService)
 
-	authorized := r.Group("/admin")
-	authorized.Use(auth.AdminRequired())
+	admin := r.Group("/admin")
+	admin.Use(auth.AdminRequired())
 	{
-		authorized.POST("/changeAdminPassword", h.ChangeAdminPassword)
-		authorized.POST("/createUser", h.CreateUser)
-		authorized.POST("/createTask", h.CreateTask)
+		admin.POST("/changeAdminPassword", h.ChangeAdminPassword)
+		admin.POST("/createUser", h.CreateUser)
+		admin.POST("/createTask", h.CreateTask)
 	}
+
+	user := r.Group("/user")
+	{
+		user.GET("/getRating", h.GetRating)
+		user.GET("/completeTask/:taskId", h.CompleteTask)
+	}
+
 	return r.Run()
 }

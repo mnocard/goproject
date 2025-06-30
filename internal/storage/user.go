@@ -16,11 +16,6 @@ type User struct {
 }
 
 func (s *storage) CreateUser(ctx context.Context, u *User) (int, error) {
-	user, err := s.FindUserByName(ctx, u.UserName)
-	if err == nil {
-		return user.Id, nil
-	}
-
 	sql := `
         INSERT INTO users (username, password, rating, is_admin)
         VALUES ($1, $2, $3, $4)
@@ -28,7 +23,7 @@ func (s *storage) CreateUser(ctx context.Context, u *User) (int, error) {
 	`
 
 	var id int
-	err = s.pool.QueryRow(ctx, sql, u.UserName, u.Password, u.Rating, u.IsAdmin).Scan(&id)
+	err := s.pool.QueryRow(ctx, sql, u.UserName, u.Password, u.Rating, u.IsAdmin).Scan(&id)
 	if err != nil {
 		s.logError(err, "storage) CreateUser")
 		return 0, err
@@ -47,9 +42,6 @@ func (s *storage) FindUserByName(ctx context.Context, uName string) (*User, erro
 
 	err := s.pool.QueryRow(ctx, sql, uName).Scan(&user.Id, &user.UserName, &user.Password, &user.Rating, &user.IsAdmin)
 	if err != nil {
-		if err == pgx.ErrNoRows {
-			return nil, nil
-		}
 		s.logError(err, "storage) FindUserByName error")
 		return nil, err
 	}
@@ -68,9 +60,6 @@ func (s *storage) FindUserById(ctx context.Context, id int) (*User, error) {
 
 	err := s.pool.QueryRow(ctx, sql, id).Scan(&user.Id, &user.UserName, &user.Password, &user.Rating, &user.IsAdmin)
 	if err != nil {
-		if err == pgx.ErrNoRows {
-			return nil, nil
-		}
 		s.logError(err, "storage) FindUserById")
 		return nil, err
 	}
@@ -81,14 +70,20 @@ func (s *storage) FindUserById(ctx context.Context, id int) (*User, error) {
 
 func (s *storage) UpdateUser(ctx context.Context, u User) (*User, error) {
 	var user *User
+	var err error
 
 	if u.Id != 0 {
-		user, _ = s.FindUserById(ctx, u.Id)
+		user, err = s.FindUserById(ctx, u.Id)
 	} else {
-		user, _ = s.FindUserByName(ctx, u.UserName)
+		user, err = s.FindUserByName(ctx, u.UserName)
 	}
 
-	if user.Id == 0 {
+	if err != nil && err != pgx.ErrNoRows {
+		s.logError(err, "storage) UpdateUser error")
+		return nil, err
+	}
+
+	if user == nil {
 		return nil, &NotFoundError{}
 	}
 

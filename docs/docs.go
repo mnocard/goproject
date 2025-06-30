@@ -110,6 +110,49 @@ const docTemplate = `{
                 ],
                 "responses": {}
             }
+        },
+        "/user/completeTask/{taskId}": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "CompleteTask",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Task ID",
+                        "name": "taskId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/user/getRating": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "GetRating",
+                "responses": {}
+            }
         }
     },
     "definitions": {
@@ -153,7 +196,8 @@ const docTemplate = `{
             ],
             "properties": {
                 "is_admin": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "default": false
                 },
                 "password": {
                     "type": "string"
